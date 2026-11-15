@@ -35,7 +35,7 @@ test("GET /profile/goals returns 404 when the profile is incomplete", async () =
 });
 
 test("PUT /profile saves the profile and GET returns it", async () => {
-  const profile = {height_cm: 172, weight_kg: 60, age: 21, sex: "male", goal: "maintain"};
+  const profile = {name: "Test User", height_cm: 172, weight_kg: 60, age: 21, sex: "male", goal: "maintain"};
 
   const putRes = await request(app).put("/profile").send(profile);
   assert.equal(putRes.status, 200);
@@ -51,10 +51,48 @@ test("GET /profile/goals calculates goals from the saved profile", async () => {
 });
 
 test("PUT /profile with an invalid goal returns 400", async () => {
-  const profile = {height_cm: 180, weight_kg: 80, age: 20, sex: "male", goal: "maintai"};
+  const profile = {name: "Test User", height_cm: 180, weight_kg: 80, age: 20, sex: "male", goal: "maintai"};
 
   const res = await request(app).put("/profile").send(profile);
   assert.equal(res.status, 400);
+  assert.equal(res.body.fields.goal, "goal must be lose, maintain, or gain");
+});
+
+test("PUT /profile requires a name", async () => {
+  const profile = {name: "   ", height_cm: 180, weight_kg: 80, age: 20, sex: "male", goal: "gain"};
+
+  const res = await request(app).put("/profile").send(profile);
+  assert.equal(res.status, 400);
+  assert.equal(res.body.error, "name is required");
+});
+
+test("PUT /profile rejects missing or out-of-range body measurements", async () => {
+  const valid = {name: "Test User", height_cm: 180, weight_kg: 80, age: 20, sex: "female", goal: "lose"};
+
+  for (const bad of [
+    {weight_kg: undefined},
+    {weight_kg: "80"},
+    {weight_kg: 5},
+    {height_cm: 400},
+    {age: 20.5},
+    {age: 7},
+  ]) {
+    const res = await request(app).put("/profile").send({...valid, ...bad});
+    assert.equal(res.status, 400, JSON.stringify(bad));
+  }
+});
+
+test("PUT /profile with no body returns 400 instead of crashing", async () => {
+  const res = await request(app).put("/profile");
+  assert.equal(res.status, 400);
+});
+
+test("PUT /profile trims the name before saving", async () => {
+  const profile = {name: "  Test User  ", height_cm: 172, weight_kg: 60, age: 21, sex: "male", goal: "maintain"};
+
+  const res = await request(app).put("/profile").send(profile);
+  assert.equal(res.status, 200);
+  assert.equal(res.body.name, "Test User");
 });
 
 after(async () => {

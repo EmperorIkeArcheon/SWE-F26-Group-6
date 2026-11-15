@@ -2,6 +2,7 @@ CREATE TABLE users (
   id SERIAL PRIMARY KEY,
   clerk_id TEXT UNIQUE NOT NULL,
   role TEXT NOT NULL, -- member or admin
+  name TEXT, -- display name, collected during onboarding
   height_cm REAL,
   weight_kg REAL,
   age INTEGER,

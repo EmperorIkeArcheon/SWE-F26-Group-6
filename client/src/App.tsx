@@ -1,8 +1,8 @@
-import { useRef, useState } from 'react'
-import type { FormEvent, ReactNode } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import type { ReactNode } from 'react'
+import { SignIn, SignUp, useAuth, useUser } from '@clerk/react'
 import {
   ArrowDown,
-  ArrowRight,
   ArrowUpRight,
   Beef,
   BookOpen,
@@ -10,91 +10,65 @@ import {
   ChevronRight,
   CircleCheck,
   Droplets,
-  Eye,
-  EyeOff,
   Flame,
   Heart,
   House,
   Leaf,
   LogOut,
-  Mail,
   Menu,
   Plus,
   Salad,
-  ShieldCheck,
   Sparkles,
   Target,
   TrendingUp,
   X,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
+import { errorMessage, getGoals, getProfile, saveProfile } from './api.ts'
+import { Brand } from './Brand.tsx'
+import { Onboarding } from './Onboarding.tsx'
+import { isProfileComplete } from './types.ts'
+import type {
+  CompleteProfile,
+  Goals,
+  Profile,
+  ProfilePayload,
+} from './types.ts'
 import './App.css'
 
-// This is an explicitly public demo, not an authentication service.
-const DEMO_EMAIL = 'demo@nutrigator.app'
-const DEMO_PASSWORD = 'Track2026!'
-const SESSION_KEY = 'nutrigator.demo-session'
 type View = 'overview' | 'diary' | 'goals'
 
-function hasDemoSession() {
-  try {
-    return sessionStorage.getItem(SESSION_KEY) === 'active'
-  } catch {
-    return false
-  }
+// Makes Clerk's prebuilt forms match the NutriGator look.
+const clerkAppearance = {
+  variables: {
+    colorPrimary: '#087f8b',
+    colorText: '#243e44',
+    borderRadius: '9px',
+    fontFamily: "'DM Sans', sans-serif",
+  },
+  elements: {
+    rootBox: { width: '100%' },
+    cardBox: { width: '100%', boxShadow: 'none', border: 'none' },
+    card: { width: '100%', boxShadow: 'none', border: 'none', padding: 0 },
+    header: { display: 'none' },
+    // The "Sign in / Sign up" switch above the form replaces Clerk's footer link.
+    footerAction: { display: 'none' },
+  },
 }
 
-function Brand() {
-  return (
-    <a className="brand" href="#main">
-      <span className="brand-mark">
-        <Leaf size={23} strokeWidth={2.2} />
-      </span>
-      <span>
-        Nutri<span className="brand-light">Gator</span>
-        <small>A LITTLE BETTER, EVERY DAY</small>
-      </span>
-    </a>
-  )
-}
-
-function Login({ onSignIn }: { onSignIn: () => void }) {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [visible, setVisible] = useState(false)
-  const [errors, setErrors] = useState<{
-    email?: string
-    password?: string
-    credentials?: string
-  }>({})
-  const emailRef = useRef<HTMLInputElement>(null)
-  const passwordRef = useRef<HTMLInputElement>(null)
-
-  function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    const next: typeof errors = {}
-    if (!email.trim()) next.email = 'Please enter your email address.'
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()))
-      next.email = 'Please enter a valid email address.'
-    if (!password) next.password = 'Please enter your password.'
-    if (Object.keys(next).length) {
-      setErrors(next)
-      if (next.email) emailRef.current?.focus()
-      else passwordRef.current?.focus()
-      return
-    }
-    if (
-      email.trim().toLowerCase() !== DEMO_EMAIL ||
-      password !== DEMO_PASSWORD
-    ) {
-      setErrors({
-        credentials:
-          'We couldn’t sign you in. Use the demo email and password shown below.',
-      })
-      return
-    }
-    onSignIn()
+function AuthPage() {
+  const [mode, setModeState] = useState<'sign-in' | 'sign-up'>('sign-in')
+  // Clerk's hash routing keeps its current step in the URL hash; clear it so
+  // one form's step never leaks into the other.
+  function setMode(next: 'sign-in' | 'sign-up') {
+    history.replaceState(
+      null,
+      '',
+      window.location.pathname + window.location.search,
+    )
+    setModeState(next)
   }
+  const signingIn = mode === 'sign-in'
 
   return (
     <main className="login-page" id="main">
@@ -199,123 +173,54 @@ function Login({ onSignIn }: { onSignIn: () => void }) {
         <div className="mobile-brand">
           <Brand />
         </div>
-        <div className="login-form-content">
+        <div className="login-form-content auth-content">
           <span className="welcome-icon">
             <Leaf size={27} />
           </span>
-          <p className="eyebrow">LET’S KEEP GROWING</p>
+          <p className="eyebrow">
+            {signingIn ? 'LET’S KEEP GROWING' : 'NEW TO NUTRIGATOR?'}
+          </p>
           <h2 id="login-title" tabIndex={-1}>
-            Welcome back.
+            {signingIn ? 'Welcome back.' : 'Create your account.'}
           </h2>
-          <p className="form-intro">Your next healthy habit starts here.</p>
-          <form onSubmit={submit} noValidate>
-            <div className="field-group">
-              <label htmlFor="email">Email address</label>
-              <div className={`input-wrap ${errors.email ? 'invalid' : ''}`}>
-                <Mail size={18} />
-                <input
-                  ref={emailRef}
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="username"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => {
-                    setEmail(e.target.value)
-                    setErrors((previous) => ({
-                      ...previous,
-                      email: undefined,
-                      credentials: undefined,
-                    }))
-                  }}
-                  required
-                  aria-invalid={!!errors.email}
-                  aria-describedby={errors.email ? 'email-error' : undefined}
-                />
-              </div>
-              {errors.email && (
-                <p className="field-error" id="email-error" role="alert">
-                  {errors.email}
-                </p>
-              )}
-            </div>
-            <div className="field-group">
-              <label htmlFor="password">Password</label>
-              <div className={`input-wrap ${errors.password ? 'invalid' : ''}`}>
-                <ShieldCheck size={18} />
-                <input
-                  ref={passwordRef}
-                  id="password"
-                  name="password"
-                  type={visible ? 'text' : 'password'}
-                  autoComplete="current-password"
-                  placeholder="Enter your password"
-                  value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value)
-                    setErrors((previous) => ({
-                      ...previous,
-                      password: undefined,
-                      credentials: undefined,
-                    }))
-                  }}
-                  required
-                  aria-invalid={!!errors.password}
-                  aria-describedby={
-                    errors.password ? 'password-error' : undefined
-                  }
-                />
-                <button
-                  className="password-toggle"
-                  type="button"
-                  onClick={() => setVisible(!visible)}
-                  aria-label={visible ? 'Hide password' : 'Show password'}
-                  aria-pressed={visible}
-                >
-                  {visible ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
-              {errors.password && (
-                <p className="field-error" id="password-error" role="alert">
-                  {errors.password}
-                </p>
-              )}
-            </div>
-            {errors.credentials && (
-              <p className="credential-error" role="alert">
-                {errors.credentials}
-              </p>
-            )}
-            <button className="button primary sign-in" type="submit">
-              Sign in <ArrowRight size={18} />
+          <p className="form-intro">
+            {signingIn
+              ? 'Your next healthy habit starts here.'
+              : 'Sign up, then we’ll ask a few quick questions to personalize your plan.'}
+          </p>
+          <div
+            className="auth-switch"
+            role="group"
+            aria-label="Sign in or create an account"
+          >
+            <button
+              type="button"
+              aria-pressed={signingIn}
+              onClick={() => setMode('sign-in')}
+            >
+              Sign in
             </button>
-          </form>
-          <div className="divider">
-            <span>NEW TO NUTRIGATOR?</span>
+            <button
+              type="button"
+              aria-pressed={!signingIn}
+              onClick={() => setMode('sign-up')}
+            >
+              Create account
+            </button>
           </div>
-          <button className="button secondary demo-button" onClick={onSignIn}>
-            <span>Take a look around</span>
-            <ArrowUpRight size={18} />
-          </button>
-          <div className="demo-disclosure">
-            <span className="demo-label">
-              <span className="status-dot" /> FRONTEND PREVIEW
-            </span>
-            <p>
-              Explore a demo account with sample data. Account registration and
-              live sign-in aren’t connected yet.
-            </p>
-            <details open={!!errors.credentials}>
-              <summary>View demo sign-in details</summary>
-              <dl>
-                <dt>Email</dt>
-                <dd>{DEMO_EMAIL}</dd>
-                <dt>Password</dt>
-                <dd>{DEMO_PASSWORD}</dd>
-              </dl>
-            </details>
-          </div>
+          {signingIn ? (
+            <SignIn
+              routing="hash"
+              fallbackRedirectUrl="/"
+              appearance={clerkAppearance}
+            />
+          ) : (
+            <SignUp
+              routing="hash"
+              fallbackRedirectUrl="/"
+              appearance={clerkAppearance}
+            />
+          )}
         </div>
         <p className="login-footer">
           <Leaf size={14} /> Good habits start with a little care.
@@ -573,7 +478,34 @@ function MealList({
   )
 }
 
-function Dashboard({ onSignOut }: { onSignOut: () => void }) {
+const GOAL_LABELS = {
+  lose: 'lose weight',
+  maintain: 'maintain your weight',
+  gain: 'gain weight',
+}
+
+function initials(name: string) {
+  const letters = name
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => part[0])
+  if (!letters.length) return '?'
+  return (
+    letters[0] + (letters.length > 1 ? letters[letters.length - 1] : '')
+  ).toUpperCase()
+}
+
+function Dashboard({
+  profile,
+  goals,
+  onSignOut,
+}: {
+  profile: CompleteProfile
+  goals: Goals | null
+  onSignOut: () => void
+}) {
+  const firstName = profile.name.trim().split(/\s+/)[0]
   const [view, setView] = useState<View>('overview')
   const [mobileMenu, setMobileMenu] = useState(false)
   const [water, setWater] = useState(1500)
@@ -645,10 +577,12 @@ function Dashboard({ onSignOut }: { onSignOut: () => void }) {
             </span>
           </div>
           <div className="profile">
-            <span className="avatar">AJ</span>
+            <span className="avatar" aria-hidden="true">
+              {initials(profile.name)}
+            </span>
             <div>
-              <strong>Alex Johnson</strong>
-              <span>Demo account</span>
+              <strong>{profile.name}</strong>
+              <span>Signed in</span>
             </div>
           </div>
           <button className="sign-out" onClick={onSignOut}>
@@ -664,10 +598,14 @@ function Dashboard({ onSignOut }: { onSignOut: () => void }) {
           </div>
           <div className="topbar-right">
             <span className="demo-badge">
-              <span className="status-dot" /> Demo workspace
+              <span className="status-dot" /> Sample food data
             </span>
-            <span className="topbar-avatar" aria-label="Alex Johnson">
-              AJ
+            <span
+              className="topbar-avatar"
+              role="img"
+              aria-label={profile.name}
+            >
+              {initials(profile.name)}
             </span>
           </div>
         </header>
@@ -681,7 +619,7 @@ function Dashboard({ onSignOut }: { onSignOut: () => void }) {
               </p>
               <h1 ref={pageHeading} tabIndex={-1}>
                 {view === 'overview'
-                  ? 'Welcome back, Alex'
+                  ? `Welcome back, ${firstName}`
                   : view === 'diary'
                     ? 'Good food. Good energy.'
                     : 'A little direction goes a long way.'}
@@ -823,30 +761,31 @@ function Dashboard({ onSignOut }: { onSignOut: () => void }) {
                   <Target size={26} />
                 </div>
                 <p className="panel-description">
-                  These sample targets show what your personal goals will look
-                  like. Personalization and goal calculations aren’t connected
-                  yet.
+                  {goals
+                    ? `Estimated for you, ${firstName}, from your age, sex, height, weight, and goal to ${GOAL_LABELS[profile.goal]}.`
+                    : 'We couldn’t load your targets right now. Refresh the page to try again.'}
                 </p>
                 <div className="goal-hero">
                   <span>
                     <Flame size={25} /> Daily energy target
                   </span>
                   <strong>
-                    2,200 <small>kcal</small>
+                    {goals ? goals.calories.toLocaleString('en-US') : '—'}{' '}
+                    <small>kcal</small>
                   </strong>
                 </div>
                 <div className="goal-targets">
                   <span>
                     <Beef size={20} />
-                    Protein<strong>130 g</strong>
+                    Protein<strong>{goals ? `${goals.protein} g` : '—'}</strong>
                   </span>
                   <span>
                     <Salad size={20} />
-                    Carbs<strong>275 g</strong>
+                    Carbs<strong>{goals ? `${goals.carbs} g` : '—'}</strong>
                   </span>
                   <span>
                     <Heart size={20} />
-                    Fats<strong>73 g</strong>
+                    Fats<strong>{goals ? `${goals.fat} g` : '—'}</strong>
                   </span>
                   <span>
                     <Droplets size={20} />
@@ -854,8 +793,8 @@ function Dashboard({ onSignOut }: { onSignOut: () => void }) {
                   </span>
                 </div>
                 <p className="goal-note">
-                  <CircleCheck size={18} /> Demo targets only; these are not
-                  personalized recommendations.
+                  <CircleCheck size={18} /> Estimates only, not medical advice.
+                  Water is a general guideline.
                 </p>
               </section>
               <MacroBreakdown />
@@ -866,7 +805,8 @@ function Dashboard({ onSignOut }: { onSignOut: () => void }) {
               <Leaf size={14} /> A little better, every day.
             </span>
             <span>
-              Frontend preview <span aria-hidden="true">·</span> Sample data
+              Sample food diary <span aria-hidden="true">·</span> Food logging
+              is coming soon
             </span>
           </footer>
         </main>
@@ -875,26 +815,120 @@ function Dashboard({ onSignOut }: { onSignOut: () => void }) {
   )
 }
 
-export default function App() {
-  const [signedIn, setSignedIn] = useState(hasDemoSession)
-  function setSession(active: boolean) {
-    try {
-      if (active) sessionStorage.setItem(SESSION_KEY, 'active')
-      else sessionStorage.removeItem(SESSION_KEY)
-    } catch {
-      /* The preview still works if browser storage is unavailable. */
-    }
-    setSignedIn(active)
-    window.scrollTo(0, 0)
-    requestAnimationFrame(() =>
-      document
-        .querySelector<HTMLElement>('.page-heading h1, #login-title')
-        ?.focus(),
-    )
-  }
-  return signedIn ? (
-    <Dashboard onSignOut={() => setSession(false)} />
-  ) : (
-    <Login onSignIn={() => setSession(true)} />
+function StatusScreen({
+  title,
+  message,
+  children,
+}: {
+  title: string
+  message?: string
+  children?: ReactNode
+}) {
+  return (
+    <main className="status-screen" id="main">
+      <Brand />
+      <h1 id="status-title" tabIndex={-1}>
+        {title}
+      </h1>
+      {message && <p role="status">{message}</p>}
+      {children && <div className="status-actions">{children}</div>}
+    </main>
   )
+}
+
+type Account =
+  | { status: 'loading' }
+  | { status: 'error'; message: string }
+  | { status: 'onboarding'; profile: Profile }
+  | { status: 'ready'; profile: CompleteProfile; goals: Goals | null }
+
+/** Everything that only exists once the person is signed in with Clerk. */
+function SignedInApp() {
+  const { getToken, signOut } = useAuth()
+  const { user } = useUser()
+  const [account, setAccount] = useState<Account>({ status: 'loading' })
+  const [attempt, setAttempt] = useState(0)
+
+  // Load the profile from the Express API; no profile yet means onboarding.
+  useEffect(() => {
+    let cancelled = false
+    async function load() {
+      try {
+        const profile = await getProfile(getToken)
+        if (cancelled) return
+        if (!isProfileComplete(profile)) {
+          setAccount({ status: 'onboarding', profile })
+          return
+        }
+        const goals = await getGoals(getToken).catch(() => null)
+        if (!cancelled) setAccount({ status: 'ready', profile, goals })
+      } catch (error) {
+        if (!cancelled)
+          setAccount({ status: 'error', message: errorMessage(error) })
+      }
+    }
+    void load()
+    return () => {
+      cancelled = true
+    }
+  }, [getToken, attempt])
+
+  const retry = useCallback(() => {
+    setAccount({ status: 'loading' })
+    setAttempt((value) => value + 1)
+  }, [])
+
+  const handleSignOut = () => {
+    void signOut()
+  }
+
+  async function completeOnboarding(payload: ProfilePayload) {
+    const saved = await saveProfile(getToken, payload)
+    if (!isProfileComplete(saved))
+      throw new Error('Your profile didn’t save completely. Please try again.')
+    const goals = await getGoals(getToken).catch(() => null)
+    setAccount({ status: 'ready', profile: saved, goals })
+    window.scrollTo(0, 0)
+  }
+
+  if (account.status === 'loading')
+    return <StatusScreen title="Loading your account…" />
+
+  if (account.status === 'error')
+    return (
+      <StatusScreen
+        title="We couldn’t load your account"
+        message={account.message}
+      >
+        <button className="button primary" onClick={retry}>
+          Try again
+        </button>
+        <button className="button secondary" onClick={handleSignOut}>
+          <LogOut size={18} /> Sign out
+        </button>
+      </StatusScreen>
+    )
+
+  if (account.status === 'onboarding')
+    return (
+      <Onboarding
+        initialName={account.profile.name ?? user?.firstName ?? ''}
+        onComplete={completeOnboarding}
+        onSignOut={handleSignOut}
+      />
+    )
+
+  return (
+    <Dashboard
+      profile={account.profile}
+      goals={account.goals}
+      onSignOut={handleSignOut}
+    />
+  )
+}
+
+export default function App() {
+  const { isLoaded, isSignedIn } = useAuth()
+  if (!isLoaded) return <StatusScreen title="Loading…" />
+  return isSignedIn ? <SignedInApp /> : <AuthPage />
 }

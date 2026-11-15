@@ -2105,3 +2105,260 @@
     transition: none !important;
   }
 }
+
+/* ---------- Sign-in (Clerk) and onboarding ---------- */
+.auth-content {
+  max-width: 400px;
+}
+.auth-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  margin-bottom: 22px;
+  background: #eef4f4;
+  border-radius: 11px;
+}
+.auth-switch button {
+  min-height: 42px;
+  border-radius: 8px;
+  background: transparent;
+  font-weight: 600;
+  color: #4c666d;
+}
+.auth-switch button[aria-pressed='true'] {
+  background: white;
+  color: #066c78;
+  box-shadow: 0 1px 4px #0b3f4a1f;
+}
+.auth-switch button:focus-visible {
+  outline-offset: 2px;
+}
+
+.status-screen {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 32px 24px;
+  text-align: center;
+}
+.status-screen h1 {
+  font-size: 28px;
+  font-weight: 500;
+  letter-spacing: -1px;
+  color: #263e45;
+}
+.status-screen h1:focus {
+  outline: none;
+}
+.status-screen p {
+  max-width: 440px;
+  color: #4c666d;
+  line-height: 1.7;
+}
+.status-screen code {
+  background: #eaf2f2;
+  border-radius: 5px;
+  padding: 2px 6px;
+  font-size: 13px;
+}
+.status-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(100%, 260px);
+}
+
+.onboarding-content {
+  max-width: 420px;
+}
+.stepper {
+  list-style: none;
+  display: flex;
+  gap: 8px;
+  margin: 0 0 26px;
+  padding: 0;
+}
+.stepper li {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #577278;
+  font-size: 12px;
+  font-weight: 600;
+}
+.stepper-dot {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1.5px solid #b9cbcf;
+  font-size: 12px;
+}
+.stepper .current {
+  color: #066c78;
+}
+.stepper .current .stepper-dot {
+  background: #087f8b;
+  border-color: #087f8b;
+  color: white;
+}
+.stepper .done .stepper-dot {
+  background: #dff1ef;
+  border-color: #7bb9be;
+  color: #066c78;
+}
+.onboarding-content .eyebrow {
+  color: #137581;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+}
+.onboarding-content h2 {
+  font-size: 32px;
+  letter-spacing: -1.3px;
+  font-weight: 500;
+  margin: 9px 0;
+  line-height: 1.3;
+  color: #263e45;
+}
+.onboarding-content h2:focus {
+  outline: none;
+}
+.input-suffix {
+  color: #577278;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.height-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.field-hint {
+  color: #577278;
+  font-size: 13px;
+  line-height: 1.6;
+  margin: -8px 0 20px;
+}
+
+fieldset.choice-group {
+  border: 0;
+  padding: 0;
+  min-width: 0;
+}
+.choice-group legend {
+  padding: 0;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 9px;
+}
+.choice-list {
+  display: grid;
+  gap: 10px;
+}
+.choice-columns {
+  grid-template-columns: 1fr 1fr;
+}
+.choice {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 51px;
+  padding: 10px 14px;
+  border: 1px solid #d7e1e4;
+  border-radius: 9px;
+  background: white;
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+}
+.choice:hover {
+  border-color: #7bb9be;
+}
+.choice input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+.choice-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+.choice-body strong {
+  font-size: 14px;
+  font-weight: 600;
+}
+.choice-body small {
+  font-size: 12px;
+  color: #577278;
+}
+.choice-check {
+  opacity: 0;
+  color: #087f8b;
+}
+.choice:has(input:checked) {
+  border-color: #087f8b;
+  background: #eaf7f4;
+  box-shadow: 0 0 0 3px #e3f3f3;
+}
+.choice:has(input:checked) .choice-check {
+  opacity: 1;
+}
+.choice:has(input:focus-visible) {
+  outline: 3px solid #167c91;
+  outline-offset: 2px;
+}
+.choice:has(input[aria-invalid='true']) {
+  border-color: #b8494f;
+}
+
+.onboarding-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 26px;
+}
+.onboarding-actions .secondary {
+  width: auto;
+  padding: 0 20px;
+}
+.onboarding-actions .primary {
+  flex: 1;
+}
+.onboarding-actions .button:disabled {
+  opacity: 0.7;
+}
+.onboarding-signout {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 24px;
+  color: #4c666d;
+  background: transparent;
+  font-size: 13px;
+}
+
+@media (max-width: 640px) {
+  .stepper-label {
+    display: none;
+  }
+  .stepper li.current .stepper-label {
+    display: inline;
+  }
+  .choice-columns {
+    grid-template-columns: 1fr;
+  }
+}
