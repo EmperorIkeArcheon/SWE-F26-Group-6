@@ -4,6 +4,7 @@ const { clerkMiddleware } = require("@clerk/express");
 const cors = require("cors");
 const { requireUser, requireAdmin } = require("./middleware/auth");
 const profileRouter = require("./routes/profile");
+const logRouter = require("./routes/log");
 const foodsRouter = require("./routes/foods");
 
 const app = express(); //create the server
@@ -11,6 +12,7 @@ app.use(cors());
 app.use(express.json()); //read JSON request bodies into req.body
 app.use(clerkMiddleware());
 app.use("/profile", requireUser, profileRouter);
+app.use("/log", requireUser, logRouter);
 app.use("/foods", requireUser, foodsRouter);
 
 app.get("/test", async (req, res) => {
