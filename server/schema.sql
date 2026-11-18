@@ -25,6 +25,7 @@ CREATE TABLE food_log_entries (
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   food_id INTEGER NOT NULL REFERENCES foods(id),
   grams REAL NOT NULL,
+  meal TEXT NOT NULL,
   logged_on DATE NOT NULL 
 );
 
