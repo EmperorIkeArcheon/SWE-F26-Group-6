@@ -6,6 +6,7 @@ const { requireUser, requireAdmin } = require("./middleware/auth");
 const profileRouter = require("./routes/profile");
 const logRouter = require("./routes/log");
 const foodsRouter = require("./routes/foods");
+const adminRouter = require("./routes/admin");
 
 const app = express(); //create the server
 app.use(cors());
@@ -14,6 +15,7 @@ app.use(clerkMiddleware());
 app.use("/profile", requireUser, profileRouter);
 app.use("/log", requireUser, logRouter);
 app.use("/foods", requireUser, foodsRouter);
+app.use("/admin", requireUser, requireAdmin, adminRouter);
 
 app.get("/test", async (req, res) => {
   const result = await pool.query("SELECT now()");
