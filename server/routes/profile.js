@@ -1,6 +1,7 @@
 const express = require("express");
 const pool = require("../db");
 const {calculateGoals} = require("../goals");
+const {validateProfile} = require("../profileValidation");
 
 const router = express.Router();
 
@@ -12,12 +13,9 @@ router.get("/", async (req, res) => {
 router.put("/", async (req, res) => {
   const { height_cm, weight_kg, age, sex, goal } = req.body;
 
-  if (!["lose", "maintain", "gain"].includes(goal)) {
-    return res.status(400).json({error: "goal must be lose, maintain, or gain"});
-  }
-
-  if (!["male", "female"].includes(sex)) {
-    return res.status(400).json({error: "sex must be male or female"});
+  const problem = validateProfile(req.body);
+  if (problem) {
+    return res.status(400).json({error: problem});
   }
 
   const result = await pool.query(

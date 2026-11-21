@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { FormEvent, ReactNode } from 'react'
 import {
   ArrowDown,
@@ -28,6 +28,11 @@ import {
   X,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
+import Onboarding from './Onboarding.tsx'
+import { accountFrom, apiRequest, clerkEnabled, loadClerk } from './clerk.ts'
+import type { ClerkInstance, ClerkUser } from './clerk.ts'
+import { isProfileComplete } from './profile.ts'
+import type { Goals, Profile } from './profile.ts'
 import './App.css'
 
 // This is an explicitly public demo, not an authentication service.
@@ -55,6 +60,98 @@ function Brand() {
         <small>A LITTLE BETTER, EVERY DAY</small>
       </span>
     </a>
+  )
+}
+
+function LoginStory() {
+  return (
+    <section className="login-story" aria-labelledby="story-title">
+      <Brand />
+      <div className="story-content">
+        <span className="eyebrow">
+          <span className="tiny-line" /> YOUR WELLNESS, IN BALANCE
+        </span>
+        <h1 id="story-title">
+          Small steps.
+          <br />
+          <span>Healthier you.</span>
+        </h1>
+        <p>
+          Make room for better habits. A simpler way to
+          <br className="desktop-break" /> nourish your body and celebrate your
+          progress.
+        </p>
+        <div className="story-visual" aria-hidden="true">
+          <div className="visual-orbit orbit-one" />
+          <div className="visual-orbit orbit-two" />
+          <span className="floating-leaf leaf-one">
+            <Leaf size={29} />
+          </span>
+          <span className="floating-leaf leaf-two">
+            <Heart size={22} />
+          </span>
+          <div className="balance-preview">
+            <div className="preview-heading">
+              <span className="preview-icon">
+                <Flame size={20} />
+              </span>
+              <span>
+                Today’s balance<small>Every choice adds up.</small>
+              </span>
+              <span className="preview-dots">•••</span>
+            </div>
+            <div className="preview-ring">
+              <svg viewBox="0 0 180 180">
+                <circle className="preview-ring-track" cx="90" cy="90" r="75" />
+                <circle className="preview-ring-fill" cx="90" cy="90" r="75" />
+              </svg>
+              <div>
+                <Flame size={22} />
+                <strong>1,640</strong>
+                <small>of 2,200 kcal</small>
+              </div>
+            </div>
+            <div className="preview-macros">
+              <span>
+                <i className="dot teal" />
+                Protein<strong>98 g</strong>
+              </span>
+              <span>
+                <i className="dot coral" />
+                Carbs<strong>192 g</strong>
+              </span>
+              <span>
+                <i className="dot gold" />
+                Fats<strong>53 g</strong>
+              </span>
+            </div>
+          </div>
+          <div className="streak-note">
+            <span>
+              <TrendingUp size={21} />
+            </span>
+            <div>
+              Progress feels good.<small>One healthy habit at a time.</small>
+            </div>
+            <Sparkles size={18} />
+          </div>
+        </div>
+        <div className="story-features">
+          <span>
+            <Salad size={18} /> Eat mindfully
+          </span>
+          <span>
+            <TrendingUp size={18} /> Track progress
+          </span>
+          <span>
+            <Heart size={18} /> Feel your best
+          </span>
+        </div>
+      </div>
+      <span className="story-footer">
+        A fresh perspective on everyday nutrition.
+      </span>
+    </section>
   )
 }
 
@@ -98,103 +195,7 @@ function Login({ onSignIn }: { onSignIn: () => void }) {
 
   return (
     <main className="login-page" id="main">
-      <section className="login-story" aria-labelledby="story-title">
-        <Brand />
-        <div className="story-content">
-          <span className="eyebrow">
-            <span className="tiny-line" /> YOUR WELLNESS, IN BALANCE
-          </span>
-          <h1 id="story-title">
-            Small steps.
-            <br />
-            <span>Healthier you.</span>
-          </h1>
-          <p>
-            Make room for better habits. A simpler way to
-            <br className="desktop-break" /> nourish your body and celebrate
-            your progress.
-          </p>
-          <div className="story-visual" aria-hidden="true">
-            <div className="visual-orbit orbit-one" />
-            <div className="visual-orbit orbit-two" />
-            <span className="floating-leaf leaf-one">
-              <Leaf size={29} />
-            </span>
-            <span className="floating-leaf leaf-two">
-              <Heart size={22} />
-            </span>
-            <div className="balance-preview">
-              <div className="preview-heading">
-                <span className="preview-icon">
-                  <Flame size={20} />
-                </span>
-                <span>
-                  Today’s balance<small>Every choice adds up.</small>
-                </span>
-                <span className="preview-dots">•••</span>
-              </div>
-              <div className="preview-ring">
-                <svg viewBox="0 0 180 180">
-                  <circle
-                    className="preview-ring-track"
-                    cx="90"
-                    cy="90"
-                    r="75"
-                  />
-                  <circle
-                    className="preview-ring-fill"
-                    cx="90"
-                    cy="90"
-                    r="75"
-                  />
-                </svg>
-                <div>
-                  <Flame size={22} />
-                  <strong>1,640</strong>
-                  <small>of 2,200 kcal</small>
-                </div>
-              </div>
-              <div className="preview-macros">
-                <span>
-                  <i className="dot teal" />
-                  Protein<strong>98 g</strong>
-                </span>
-                <span>
-                  <i className="dot coral" />
-                  Carbs<strong>192 g</strong>
-                </span>
-                <span>
-                  <i className="dot gold" />
-                  Fats<strong>53 g</strong>
-                </span>
-              </div>
-            </div>
-            <div className="streak-note">
-              <span>
-                <TrendingUp size={21} />
-              </span>
-              <div>
-                Progress feels good.<small>One healthy habit at a time.</small>
-              </div>
-              <Sparkles size={18} />
-            </div>
-          </div>
-          <div className="story-features">
-            <span>
-              <Salad size={18} /> Eat mindfully
-            </span>
-            <span>
-              <TrendingUp size={18} /> Track progress
-            </span>
-            <span>
-              <Heart size={18} /> Feel your best
-            </span>
-          </div>
-        </div>
-        <span className="story-footer">
-          A fresh perspective on everyday nutrition.
-        </span>
-      </section>
+      <LoginStory />
       <section className="login-form-panel" aria-labelledby="login-title">
         <div className="mobile-brand">
           <Brand />
@@ -573,7 +574,23 @@ function MealList({
   )
 }
 
-function Dashboard({ onSignOut }: { onSignOut: () => void }) {
+interface Account {
+  name: string
+  fullName: string
+  email: string
+  initials: string
+}
+
+// With no `account` the dashboard is the public frontend demo; with one it is a real signed-in user.
+function Dashboard({
+  onSignOut,
+  account,
+  goals,
+}: {
+  onSignOut: () => void
+  account?: Account
+  goals?: Goals
+}) {
   const [view, setView] = useState<View>('overview')
   const [mobileMenu, setMobileMenu] = useState(false)
   const [water, setWater] = useState(1500)
@@ -645,10 +662,10 @@ function Dashboard({ onSignOut }: { onSignOut: () => void }) {
             </span>
           </div>
           <div className="profile">
-            <span className="avatar">AJ</span>
+            <span className="avatar">{account ? account.initials : 'AJ'}</span>
             <div>
-              <strong>Alex Johnson</strong>
-              <span>Demo account</span>
+              <strong>{account ? account.fullName : 'Alex Johnson'}</strong>
+              <span>{account ? account.email : 'Demo account'}</span>
             </div>
           </div>
           <button className="sign-out" onClick={onSignOut}>
@@ -664,10 +681,14 @@ function Dashboard({ onSignOut }: { onSignOut: () => void }) {
           </div>
           <div className="topbar-right">
             <span className="demo-badge">
-              <span className="status-dot" /> Demo workspace
+              <span className="status-dot" />{' '}
+              {account ? 'Signed in' : 'Demo workspace'}
             </span>
-            <span className="topbar-avatar" aria-label="Alex Johnson">
-              AJ
+            <span
+              className="topbar-avatar"
+              aria-label={account ? account.fullName : 'Alex Johnson'}
+            >
+              {account ? account.initials : 'AJ'}
             </span>
           </div>
         </header>
@@ -681,7 +702,7 @@ function Dashboard({ onSignOut }: { onSignOut: () => void }) {
               </p>
               <h1 ref={pageHeading} tabIndex={-1}>
                 {view === 'overview'
-                  ? 'Welcome back, Alex'
+                  ? `Welcome back, ${account ? account.name : 'Alex'}`
                   : view === 'diary'
                     ? 'Good food. Good energy.'
                     : 'A little direction goes a long way.'}
@@ -823,30 +844,31 @@ function Dashboard({ onSignOut }: { onSignOut: () => void }) {
                   <Target size={26} />
                 </div>
                 <p className="panel-description">
-                  These sample targets show what your personal goals will look
-                  like. Personalization and goal calculations aren’t connected
-                  yet.
+                  {goals
+                    ? 'Your daily targets are calculated from the details you shared when you set up your account.'
+                    : 'These sample targets show what your personal goals will look like. Personalization and goal calculations aren’t connected yet.'}
                 </p>
                 <div className="goal-hero">
                   <span>
                     <Flame size={25} /> Daily energy target
                   </span>
                   <strong>
-                    2,200 <small>kcal</small>
+                    {goals ? goals.calories.toLocaleString('en-US') : '2,200'}{' '}
+                    <small>kcal</small>
                   </strong>
                 </div>
                 <div className="goal-targets">
                   <span>
                     <Beef size={20} />
-                    Protein<strong>130 g</strong>
+                    Protein<strong>{goals ? goals.protein : 130} g</strong>
                   </span>
                   <span>
                     <Salad size={20} />
-                    Carbs<strong>275 g</strong>
+                    Carbs<strong>{goals ? goals.carbs : 275} g</strong>
                   </span>
                   <span>
                     <Heart size={20} />
-                    Fats<strong>73 g</strong>
+                    Fats<strong>{goals ? goals.fat : 73} g</strong>
                   </span>
                   <span>
                     <Droplets size={20} />
@@ -854,8 +876,10 @@ function Dashboard({ onSignOut }: { onSignOut: () => void }) {
                   </span>
                 </div>
                 <p className="goal-note">
-                  <CircleCheck size={18} /> Demo targets only; these are not
-                  personalized recommendations.
+                  <CircleCheck size={18} />{' '}
+                  {goals
+                    ? 'Estimates only, based on typical activity. They are not medical advice.'
+                    : 'Demo targets only; these are not personalized recommendations.'}
                 </p>
               </section>
               <MacroBreakdown />
@@ -866,7 +890,8 @@ function Dashboard({ onSignOut }: { onSignOut: () => void }) {
               <Leaf size={14} /> A little better, every day.
             </span>
             <span>
-              Frontend preview <span aria-hidden="true">·</span> Sample data
+              {account ? 'Food log' : 'Frontend preview'}{' '}
+              <span aria-hidden="true">·</span> Sample data
             </span>
           </footer>
         </main>
@@ -875,7 +900,7 @@ function Dashboard({ onSignOut }: { onSignOut: () => void }) {
   )
 }
 
-export default function App() {
+function DemoApp() {
   const [signedIn, setSignedIn] = useState(hasDemoSession)
   function setSession(active: boolean) {
     try {
@@ -897,4 +922,250 @@ export default function App() {
   ) : (
     <Login onSignIn={() => setSession(true)} />
   )
+}
+
+function StatusPage({
+  children,
+  error = false,
+}: {
+  children: ReactNode
+  error?: boolean
+}) {
+  return (
+    <main className="status-page" id="main">
+      <div className="status-card" role={error ? 'alert' : 'status'}>
+        <Brand />
+        {children}
+      </div>
+    </main>
+  )
+}
+
+// Clerk's prebuilt sign-in / sign-up forms, shown in the same layout as the demo login.
+function AuthScreen({ clerk }: { clerk: ClerkInstance }) {
+  const signUp =
+    new URLSearchParams(window.location.search).get('auth') === 'sign-up'
+  const mount = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const node = mount.current
+    if (!node) return
+    const props = {
+      fallbackRedirectUrl: '/',
+      appearance: {
+        variables: {
+          colorPrimary: '#087f8b',
+          fontFamily: 'DM Sans, sans-serif',
+        },
+        elements: {
+          rootBox: { width: '100%' },
+          cardBox: { width: '100%', boxShadow: 'none', border: 'none' },
+          card: { boxShadow: 'none', border: 'none', padding: 0 },
+          footerAction: { display: 'none' },
+        },
+      },
+    }
+    if (signUp)
+      clerk.mountSignUp(node, { ...props, signInUrl: '/?auth=sign-in' })
+    else clerk.mountSignIn(node, { ...props, signUpUrl: '/?auth=sign-up' })
+    return () => {
+      if (signUp) clerk.unmountSignUp(node)
+      else clerk.unmountSignIn(node)
+    }
+  }, [clerk, signUp])
+
+  return (
+    <main className="login-page" id="main">
+      <LoginStory />
+      <section className="login-form-panel" aria-labelledby="auth-title">
+        <div className="mobile-brand">
+          <Brand />
+        </div>
+        <div className="login-form-content auth-content">
+          <span className="welcome-icon">
+            <Leaf size={27} />
+          </span>
+          <p className="eyebrow">
+            {signUp ? 'JOIN NUTRIGATOR' : 'LET’S KEEP GROWING'}
+          </p>
+          <h2 id="auth-title" tabIndex={-1}>
+            {signUp ? 'Create your account.' : 'Welcome back.'}
+          </h2>
+          <p className="form-intro">
+            {signUp
+              ? 'It only takes a minute. Next, we’ll ask a few questions to personalise your goals.'
+              : 'Your next healthy habit starts here.'}
+          </p>
+          <div ref={mount} className="clerk-mount" />
+          <p className="auth-switch">
+            {signUp ? (
+              <>
+                Already have an account? <a href="/?auth=sign-in">Sign in</a>
+              </>
+            ) : (
+              <>
+                New to NutriGator?{' '}
+                <a href="/?auth=sign-up">Create an account</a>
+              </>
+            )}
+          </p>
+        </div>
+        <p className="login-footer">
+          <Leaf size={14} /> Good habits start with a little care.
+        </p>
+      </section>
+    </main>
+  )
+}
+
+type Gate =
+  | { status: 'loading' }
+  | { status: 'error'; message: string }
+  | { status: 'onboarding' }
+  | { status: 'ready'; goals: Goals }
+
+// Signed-in users: load the profile from the Express API. Anyone who has not completed
+// their profile (every new account) is sent through onboarding first.
+function SignedIn({ clerk, user }: { clerk: ClerkInstance; user: ClerkUser }) {
+  const [gate, setGate] = useState<Gate>({ status: 'loading' })
+  const [attempt, setAttempt] = useState(0)
+
+  useEffect(() => {
+    let active = true
+    async function load() {
+      try {
+        const profile = await apiRequest<Profile>(clerk, '/profile')
+        if (!isProfileComplete(profile)) {
+          if (active) setGate({ status: 'onboarding' })
+          return
+        }
+        const goals = await apiRequest<Goals>(clerk, '/profile/goals')
+        if (active) setGate({ status: 'ready', goals })
+      } catch (error) {
+        if (!active) return
+        const status = (error as { status?: number }).status
+        setGate({
+          status: 'error',
+          message:
+            status === 401
+              ? 'The server didn’t accept your sign-in. Make sure client/.env and server/.env use keys from the same Clerk application.'
+              : error instanceof Error
+                ? error.message
+                : 'Something went wrong while loading your account.',
+        })
+      }
+    }
+    void load()
+    return () => {
+      active = false
+    }
+  }, [clerk, attempt])
+
+  if (gate.status === 'loading')
+    return <StatusPage>Loading your account…</StatusPage>
+  if (gate.status === 'error')
+    return (
+      <StatusPage error>
+        <p>{gate.message}</p>
+        <div className="status-actions">
+          <button
+            className="button primary"
+            onClick={() => {
+              setGate({ status: 'loading' })
+              setAttempt((count) => count + 1)
+            }}
+          >
+            Try again
+          </button>
+          <button
+            className="button secondary"
+            onClick={() => void clerk.signOut()}
+          >
+            Sign out
+          </button>
+        </div>
+      </StatusPage>
+    )
+  if (gate.status === 'onboarding')
+    return (
+      <Onboarding
+        clerk={clerk}
+        initialName={user.firstName ?? ''}
+        onComplete={(goals) => {
+          if (goals) setGate({ status: 'ready', goals })
+          else {
+            setGate({ status: 'loading' })
+            setAttempt((count) => count + 1)
+          }
+        }}
+      />
+    )
+  return (
+    <Dashboard
+      account={accountFrom(user)}
+      goals={gate.goals}
+      onSignOut={() => void clerk.signOut()}
+    />
+  )
+}
+
+function ClerkApp() {
+  const [clerk, setClerk] = useState<ClerkInstance | null>(null)
+  const [user, setUser] = useState<ClerkUser | null>(null)
+  const [error, setError] = useState('')
+  const [attempt, setAttempt] = useState(0)
+
+  useEffect(() => {
+    let active = true
+    let unsubscribe = () => {}
+    loadClerk().then(
+      (instance) => {
+        if (!active) return
+        setClerk(instance)
+        setUser(instance.user ?? null)
+        unsubscribe = instance.addListener(({ user: next }) =>
+          setUser(next ?? null),
+        )
+      },
+      (reason: unknown) => {
+        if (active)
+          setError(
+            reason instanceof Error ? reason.message : 'Could not load Clerk.',
+          )
+      },
+    )
+    return () => {
+      active = false
+      unsubscribe()
+    }
+  }, [attempt])
+
+  if (error)
+    return (
+      <StatusPage error>
+        <p>{error}</p>
+        <div className="status-actions">
+          <button
+            className="button primary"
+            onClick={() => {
+              setError('')
+              setAttempt((count) => count + 1)
+            }}
+          >
+            Try again
+          </button>
+        </div>
+      </StatusPage>
+    )
+  if (!clerk) return <StatusPage>Loading…</StatusPage>
+  return user ? (
+    <SignedIn clerk={clerk} user={user} />
+  ) : (
+    <AuthScreen clerk={clerk} />
+  )
+}
+
+// Real Clerk sign-in when VITE_CLERK_PUBLISHABLE_KEY is set; otherwise the public demo.
+export default function App() {
+  return clerkEnabled ? <ClerkApp /> : <DemoApp />
 }

@@ -26,5 +26,7 @@ export default defineConfig({
     command: 'npm run dev -- --host 127.0.0.1 --port 5173 --strictPort',
     url: 'http://127.0.0.1:5173',
     reuseExistingServer: !process.env.CI,
+    // The browser tests cover the public demo, so ignore any Clerk key in a local .env file.
+    env: { VITE_CLERK_PUBLISHABLE_KEY: '' },
   },
 })
