@@ -21,7 +21,27 @@ Choose **Take a look around**, or use these public demo credentials:
 
 The demo includes login validation, show/hide password, a session that survives reloads in the same tab, sign-out, and responsive navigation. The overview links to sample food diary and goals views. The water card can add glasses up to its sample daily target; this interaction resets when the dashboard reloads.
 
-**Authentication is a frontend demo.** The existing Express server has no authentication endpoint. The demo credentials are public fixtures, and the browser session flag is not an authentication boundary. No passwords are stored. Registration, real user login, calorie calculations, and saved food logging still need backend integration. Do not use real account credentials in this preview.
+Without any configuration the frontend runs as the public demo above. Real accounts (below) are switched on by adding a Clerk key.
+
+## Sign-in with Clerk and onboarding
+
+The server already verifies Clerk session tokens (`@clerk/express`). The frontend uses Clerk's browser SDK loaded from Clerk's CDN.
+
+1. Start the database server and API from `server/` via Docker:
+
+   ```sh
+   cd server
+   docker compose up -d   # PostgreSQL; schema.sql is applied on first start
+   npm install
+   npm run dev            # http://localhost:3000
+   ```
+
+3. Open a new terminal for the frontend then start it from the repository root:
+
+   ```sh
+   npm ci
+   npm run dev
+   ```
 
 ## Checks
 
@@ -32,7 +52,7 @@ npx playwright install chromium
 npm test
 ```
 
-Playwright starts the frontend automatically. Ten browser scenarios run in desktop Chromium and Pixel 7 mobile emulation (20 checks), including automated WCAG A/AA checks with axe. `npm run build` also type-checks application code, test code, and configuration. Automated accessibility checks do not replace a manual accessibility audit.
+Playwright starts the frontend automatically. The browser scenarios run against the demo in desktop Chromium and Pixel 7 mobile emulation, including automated WCAG A/AA checks with axe. `npm run build` also type-checks application code, test code, and configuration. Automated accessibility checks do not replace a manual accessibility audit.
 
 ```sh
 npm run test:ui
@@ -47,6 +67,8 @@ The [test-case table](docs/test-cases.md) follows the supplied spreadsheet colum
 ## Structure
 
 - `client/`: React, TypeScript, and Vite frontend; styles and local font imports in `client/src/`.
-- `client/tests/login.spec.ts`: browser tests for login, validation, sessions, navigation, layout, and accessibility.
+- `client/tests/login.spec.ts`: browser tests for the demo login, validation, sessions, navigation, layout, and accessibility.
+- `client/tests/onboarding.spec.ts`: logic tests for onboarding validation and unit conversion (no browser or Clerk key needed).
+- `client/src/clerk.ts`: loads Clerk's browser SDK and calls the API with the session token. `client/src/Onboarding.tsx` and `client/src/profile.ts` hold the onboarding flow.
 - `docs/test-cases.md`: reproducible manual test cases and automated coverage.
-- `server/`: existing Express/PostgreSQL scaffold, managed separately with its own package and lockfile. Root npm commands target the frontend workspace.
+- `server/`: Express/PostgreSQL API with Clerk token verification, managed separately with its own package and lockfile. Root npm commands target the frontend workspace. Run its tests with `npm test` from `server/` (most need the database running).
