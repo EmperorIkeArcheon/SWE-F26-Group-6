@@ -28,6 +28,7 @@ import {
   X,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
+import Admin from './Admin.tsx'
 import Onboarding from './Onboarding.tsx'
 import { accountFrom, apiRequest, clerkEnabled, loadClerk } from './clerk.ts'
 import type { ClerkInstance, ClerkUser } from './clerk.ts'
@@ -39,7 +40,7 @@ import './App.css'
 const DEMO_EMAIL = 'demo@nutrigator.app'
 const DEMO_PASSWORD = 'Track2026!'
 const SESSION_KEY = 'nutrigator.demo-session'
-type View = 'overview' | 'diary' | 'goals'
+type View = 'overview' | 'diary' | 'goals' | 'admin'
 
 function hasDemoSession() {
   try {
@@ -586,10 +587,14 @@ function Dashboard({
   onSignOut,
   account,
   goals,
+  clerk,
+  isAdmin,
 }: {
   onSignOut: () => void
   account?: Account
   goals?: Goals
+  clerk?: ClerkInstance
+  isAdmin?: boolean
 }) {
   const [view, setView] = useState<View>('overview')
   const [mobileMenu, setMobileMenu] = useState(false)
@@ -602,7 +607,12 @@ function Dashboard({
     day: 'numeric',
   }).format(now)
   const isoDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
-
+  const navItems = isAdmin
+    ? [
+      ...navigation,
+      {id: 'admin' as const, label: 'Admin', icon: ShieldCheck },
+    ]
+    : navigation
   function navigate(next: View) {
     setView(next)
     setMobileMenu(false)
@@ -637,7 +647,7 @@ function Dashboard({
         <Brand />
         <div className="sidebar-group-label">YOUR WORKSPACE</div>
         <nav aria-label="Main navigation">
-          {navigation.map(({ id, label, icon: Icon }) => (
+          {navItems.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
               className={`nav-item ${view === id ? 'active' : ''}`}
@@ -698,14 +708,18 @@ function Dashboard({
               <p className="eyebrow">
                 {view === 'overview'
                   ? 'MAKE TODAY A GOOD DAY'
-                  : 'YOUR NUTRITION, AT A GLANCE'}
+                  : view === 'admin'
+                    ? 'ADMINISTRATION'
+                    : 'YOUR NUTRITION, AT A GLANCE'}
               </p>
               <h1 ref={pageHeading} tabIndex={-1}>
                 {view === 'overview'
                   ? `Welcome back, ${account ? account.name : 'Alex'}`
                   : view === 'diary'
                     ? 'Good food. Good energy.'
-                    : 'A little direction goes a long way.'}
+                    : view === 'admin'
+                      ? 'Manage foods'
+                      : 'A little direction goes a long way.'}
                 {view === 'overview' && (
                   <span className="greeting-sparkle" aria-hidden="true">
                     ✳
@@ -717,7 +731,9 @@ function Dashboard({
                   ? 'Here’s how your healthy habits are adding up.'
                   : view === 'diary'
                     ? 'A mindful moment for every meal.'
-                    : 'Keep your daily targets in sight.'}
+                    : view === 'admin'
+                      ? 'Changes apply to every user.'
+                      : 'Keep your daily targets in sight.'}
               </p>
             </div>
             <div className="today">
@@ -827,6 +843,7 @@ function Dashboard({
               </div>
             </>
           )}
+          {view === 'admin' && isAdmin && clerk && <Admin clerk={clerk} />}
           {view === 'diary' && (
             <div className="detail-grid">
               <MealList full />
@@ -1022,7 +1039,7 @@ type Gate =
   | { status: 'loading' }
   | { status: 'error'; message: string }
   | { status: 'onboarding' }
-  | { status: 'ready'; goals: Goals }
+  | { status: 'ready'; goals: Goals; isAdmin?: boolean }
 
 // Signed-in users: load the profile from the Express API. Anyone who has not completed
 // their profile (every new account) is sent through onboarding first.
@@ -1040,7 +1057,7 @@ function SignedIn({ clerk, user }: { clerk: ClerkInstance; user: ClerkUser }) {
           return
         }
         const goals = await apiRequest<Goals>(clerk, '/profile/goals')
-        if (active) setGate({ status: 'ready', goals })
+        if (active) setGate({ status: 'ready', goals, isAdmin: profile.role === 'admin' })
       } catch (error) {
         if (!active) return
         const status = (error as { status?: number }).status
@@ -1104,6 +1121,8 @@ function SignedIn({ clerk, user }: { clerk: ClerkInstance; user: ClerkUser }) {
     <Dashboard
       account={accountFrom(user)}
       goals={gate.goals}
+      clerk={clerk}
+      isAdmin={gate.isAdmin}
       onSignOut={() => void clerk.signOut()}
     />
   )

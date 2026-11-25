@@ -1,0 +1,53 @@
+.admin-search {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  margin-top: 16px;
+}
+.admin-search .field-group {
+  flex: 1;
+}
+.admin-food-list {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+  max-height: 420px;
+  overflow-y: auto;
+}
+.admin-food-item {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  text-align: left;
+  padding: 12px 14px;
+  border: 1px solid #d9e6e9;
+  border-radius: 12px;
+  background: #fff;
+}
+.admin-food-item:hover {
+  border-color: #167c91;
+}
+.admin-food-item[aria-pressed='true'] {
+  border-color: #167c91;
+  background: #eef8f9;
+}
+.admin-food-kcal {
+  color: #4a6369;
+  white-space: nowrap;
+}
+.admin-empty {
+  margin-top: 16px;
+  color: #4a6369;
+}
+.admin-form {
+  display: grid;
+  gap: 16px;
+  margin-top: 16px;
+}
+.admin-saved {
+  color: #17474e;
+  font-weight: 600;
+}
